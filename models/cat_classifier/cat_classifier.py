@@ -14,9 +14,11 @@ from cat_nets.datasets.read_pets import catClassification_loader
 
 
 NUM_CLASSES = 12
-#train_path,_,_ = generate_CatClassification_csv([.7,.2,.1])
 
 
+
+def inference(images):
+    pass
 
 
 
@@ -27,35 +29,15 @@ graph = tf.Graph()
 
 
 with graph.as_default():
+    train_path = '..\\..\\cat_nets\\datasets\\cat_pet_train.csv'
     image, label, cat_dict = catClassification_loader(train_path)
     
     image = tf.image.convert_image_dtype(image,tf.float32)
+    image = tf.expand_dims(image,0)
+    image = tf.map_fn(lambda im: tf.image.per_image_standardization(im), image)
+    image = tf.squeeze(image)
     
 
-    
-    
-    isTraining = tf.constant(True)
-    
-    
-    x_in = tf.placeholder(tf.float32,[None,None,None,3])
-    
-    x = tf.cond(isTraining, lambda : image, lambda : x_in )
-    
-
-    y = tf.cond(isTraining, lambda: tf.one_hot(label, depth = NUM_CLASSES),
-                lambda: _ )
-    
-    x_feed = tf.map_fn(lambda im: tf.image.per_image_standardization(im), x)
-    
-    
-    with tf.variable_scope("conv1"):
-        
-        W = tf.get_variable("W",shape = [5,5,64,128],
-                            initializer= tf.truncated_normal_initializer())
-        b = tf.get_variable("b",shape = [128],
-                            initializer= tf.truncated_normal_initializer())
-        
-        h1 = tf.nn.elu(tf.nn.conv2d(x_feed,W,[1,1,1,1],'SAME'))
     
     
     
@@ -71,7 +53,7 @@ with tf.Session(graph = graph) as sess:
     coord = tf.train.Coordinator()
     threads = tf.train.start_queue_runners(coord=coord)
     
-    im,name = sess.run([x_feed,label])
+    im,name = sess.run([image,label])
     
     plt.imshow(im)
     plt.title(cat_dict[name])
